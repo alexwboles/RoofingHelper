@@ -1,25 +1,63 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RoofingHelper – AI Roof Analyzer</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <title>Roof Analyzer</title>
+  <style>
+    body { font-family: sans-serif; padding: 40px; background: #f7f7f7; }
+    .box { max-width: 600px; margin: auto; background: white; padding: 30px;
+           border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    input { width: 100%; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ccc; }
+    button { margin-top: 10px; padding: 12px; width: 100%; background: #0078ff; color: white;
+             border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #005fcc; }
+    #results { margin-top: 20px; padding: 20px; background: #fafafa; border-radius: 8px; border: 1px solid #eee; }
+  </style>
 </head>
 <body>
 
-  <section class="container">
-    <h1>AI Roof Analyzer</h1>
-    <p>Enter your address to analyze your roof using satellite imagery.</p>
+<div class="box">
+  <h1>AI Roof Analyzer</h1>
+  <p>Enter your address to analyze your roof.</p>
 
-    <div class="input-row">
-      <input id="address" placeholder="123 Main St, St Augustine, FL" />
-      <button id="analyze">Analyze Roof</button>
-    </div>
+  <input id="address" placeholder="123 Main St, St Augustine, FL" />
+  <button onclick="analyze()">Analyze Roof</button>
 
-    <div id="results" class="results"></div>
-  </section>
+  <div id="results"></div>
+</div>
 
-  <script src="/js/app.js"></script>
+<script>
+async function analyze() {
+  const address = document.getElementById("address").value.trim();
+  const results = document.getElementById("results");
+
+  if (!address) {
+    results.textContent = "Please enter an address.";
+    return;
+  }
+
+  results.textContent = "Analyzing...";
+
+  try {
+    const res = await fetch(`/api/analyzeRoof?address=${encodeURIComponent(address)}`);
+    const data = await res.json();
+
+    if (data.error) {
+      results.textContent = "Error: " + data.error;
+      return;
+    }
+
+    results.innerHTML = `
+      <h3>Roof Analysis</h3>
+      <p><strong>Square Footage:</strong> ${data.squareFootage}</p>
+      <p><strong>Roof Sections:</strong> ${data.roofSections}</p>
+      <p><strong>Material Type:</strong> ${data.materialType}</p>
+    `;
+  } catch (err) {
+    results.textContent = "Unable to analyze roof.";
+  }
+}
+</script>
+
 </body>
 </html>
