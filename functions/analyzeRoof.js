@@ -6,10 +6,7 @@ export default {
       const address = url.searchParams.get("address");
 
       if (!address) {
-        return new Response(JSON.stringify({ error: "Missing address" }), {
-          status: 400,
-          headers: { "Content-Type": "application/json" }
-        });
+        return json({ error: "Missing address" }, 400);
       }
 
       // 1. Geocode address → lat/lng
@@ -22,7 +19,7 @@ export default {
       const lat = geo[0].lat;
       const lon = geo[0].lon;
 
-      // 2. Fetch satellite image (static map tile)
+      // 2. Fetch satellite image (Google Static Maps)
       const satUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${lat},${lon}&zoom=20&size=600x600&maptype=satellite&key=${env.GOOGLE_MAPS_KEY}`;
       const satImg = await fetch(satUrl);
       const satBlob = await satImg.arrayBuffer();
@@ -30,26 +27,29 @@ export default {
       // 3. Send to AI vision model
       const aiRes = await fetch(env.AI_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${env.AI_KEY}` },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${env.AI_KEY}`
+        },
         body: JSON.stringify({
-          image: [...new Uint8Array(satBlob)],
-          prompt: "Analyze this roof. Return JSON with: squareFootage, roofSections, materialType."
+          prompt: "Analyze this roof. Return JSON with: squareFootage, roofSections, materialType.",
+          image: [...new Uint8Array(satBlob)]
         })
       });
 
       const aiData = await aiRes.json();
 
-      // 4. Return structured result
-      return new Response(JSON.stringify(aiData), {
-        status: 200,
-        headers: { "Content-Type": "application/json" }
-      });
+      return json(aiData, 200);
 
     } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
+      return json({ error: err.message }, 500);
     }
   }
 };
+
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { "Content-Type": "application/json" }
+  });
+}
